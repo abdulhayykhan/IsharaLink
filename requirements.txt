@@ -1,0 +1,15 @@
+numpy
+pandas
+scikit-learn
+scipy
+matplotlib
+seaborn
+joblib
+tensorflow
+opencv-python
+mediapipe
+fastapi
+uvicorn
+pydantic
+requests
+kaggle
