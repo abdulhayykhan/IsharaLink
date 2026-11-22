@@ -1,0 +1,5 @@
+{
+  "threshold": 0.3,
+  "test_accept_rate": 1.0,
+  "test_accuracy_on_accepted": 0.9801255230125523
+}
