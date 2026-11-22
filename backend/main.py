@@ -17,6 +17,7 @@ import sys
 import time
 
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -109,6 +110,18 @@ async def add_process_time_header(request: Request, call_next):
     process_time_ms = (time.perf_counter() - start_time) * 1000.0
     response.headers["X-Process-Time-Ms"] = f"{process_time_ms:.2f}"
     return response
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Log validation errors and format into a readable error message."""
+    errors = exc.errors()
+    logger.warning("Validation error on %s %s: %s", request.method, request.url.path, errors)
+    messages = [f"{e.get('msg', 'Invalid input')} (at {'.'.join(str(x) for x in e.get('loc', []))})" for e in errors]
+    return JSONResponse(
+        status_code=422,
+        content={"detail": " | ".join(messages) if messages else "Invalid request payload"}
+    )
 
 
 @app.get("/health", response_model=HealthResponse)

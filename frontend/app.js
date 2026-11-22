@@ -17,8 +17,8 @@
 // --- Configuration & Constants ---------------------------------------------
 const CONFIG = {
   defaultApiBaseUrl: 'http://localhost:8000',
-  captureDurationMs: 2000,       // ~2 seconds recording window
-  targetMinFrames: 30,           // minimum frames required
+  captureDurationMs: 2500,       // 2.5 seconds base recording window
+  targetMinFrames: 20,           // minimum target frames
   targetMaxFrames: 60,           // standard clip size
   detectionConfidence: 0.4,      // MediaPipe detection confidence
   trackingConfidence: 0.4,       // MediaPipe tracking confidence
@@ -500,14 +500,15 @@ function drawHandSkeleton(ctx, landmarks, width, height, strokeColor, fillColor)
 
 // --- Frame Capture & Landmark Formatting (Step 3 & 4) ----------------------
 function captureCurrentFrame(leftLandmarks, rightLandmarks) {
-  // Format hand points to exactly [[x, y, z] x 21] or null
+  // Format hand points to exactly [[x, y, z] x 21] or null with numeric sanitization
   const formatPoints = (lmList) => {
-    if (!lmList || lmList.length !== 21) return null;
-    return lmList.map((pt) => [
-      parseFloat(pt.x.toFixed(6)),
-      parseFloat(pt.y.toFixed(6)),
-      parseFloat(pt.z.toFixed(6)),
-    ]);
+    if (!lmList || !Array.isArray(lmList) || lmList.length !== 21) return null;
+    return lmList.map((pt) => {
+      const x = (pt && typeof pt.x === 'number' && !isNaN(pt.x)) ? Number(pt.x.toFixed(6)) : 0.0;
+      const y = (pt && typeof pt.y === 'number' && !isNaN(pt.y)) ? Number(pt.y.toFixed(6)) : 0.0;
+      const z = (pt && typeof pt.z === 'number' && !isNaN(pt.z)) ? Number(pt.z.toFixed(6)) : 0.0;
+      return [x, y, z];
+    });
   };
 
   let leftData = formatPoints(leftLandmarks);
@@ -534,8 +535,14 @@ function captureCurrentFrame(leftLandmarks, rightLandmarks) {
   DOM.captureProgressFill.style.width = `${pct}%`;
   DOM.captureFrameCount.textContent = `${count} frames (${(elapsed / 1000).toFixed(1)}s)`;
 
-  // If time elapsed or max frames reached, finalize recording
-  if (elapsed >= CONFIG.captureDurationMs || count >= CONFIG.targetMaxFrames) {
+  // Ensure sufficient frames are captured:
+  // Reached targetMaxFrames (60), or base duration elapsed with at least 20 frames,
+  // or safety timeout (4200ms) for low-FPS webcams.
+  const reachedMax = count >= CONFIG.targetMaxFrames;
+  const reachedDurationWithTarget = elapsed >= CONFIG.captureDurationMs && count >= CONFIG.targetMinFrames;
+  const reachedSafetyTimeout = elapsed >= 4200;
+
+  if (reachedMax || reachedDurationWithTarget || reachedSafetyTimeout) {
     stopRecording();
   }
 }
@@ -588,8 +595,11 @@ function stopRecording() {
   const capturedCount = state.captureBuffer.length;
   console.log(`🎬 Captured ${capturedCount} raw frames`);
 
-  if (capturedCount < CONFIG.targetMinFrames) {
-    console.warn(`Captured clip too short (${capturedCount} frames, min ${CONFIG.targetMinFrames})`);
+  if (capturedCount < 10) {
+    showErrorState(
+      `Capture too short: Only ${capturedCount} frames recorded (minimum 10 required). Your webcam or browser had low FPS. Please try recording again.`
+    );
+    return;
   }
 
   // Preserve captured frames for debugging/export (Step 9)
@@ -632,10 +642,20 @@ async function sendPredictionRequest(frames) {
     const elapsedMs = (performance.now() - startTime).toFixed(1);
 
     if (!response.ok) {
-      let errDetail = `Server responded with ${response.status}`;
+      let errDetail = `Server responded with status ${response.status}`;
       try {
         const errJson = await response.json();
-        errDetail = errJson.detail || JSON.stringify(errJson);
+        if (errJson && errJson.detail) {
+          if (Array.isArray(errJson.detail)) {
+            errDetail = errJson.detail.map(d => (d.msg || JSON.stringify(d))).join(' | ');
+          } else if (typeof errJson.detail === 'object') {
+            errDetail = JSON.stringify(errJson.detail);
+          } else {
+            errDetail = String(errJson.detail);
+          }
+        } else {
+          errDetail = JSON.stringify(errJson);
+        }
       } catch (e) {
         errDetail = await response.text();
       }
