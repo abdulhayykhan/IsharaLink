@@ -1,0 +1,17 @@
+{
+  "cell": "gru",
+  "val_acc": 0.9811715481171548,
+  "test_acc": 0.9801255230125523,
+  "augment": false,
+  "config": {
+    "units": 64,
+    "dropout": 0.3,
+    "l2": 0.0,
+    "head_activation": null,
+    "head_units": 64,
+    "optimizer": "adam",
+    "lr": 0.001
+  },
+  "seq_len": 60,
+  "n_features": 126
+}
