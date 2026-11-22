@@ -112,9 +112,30 @@ const HAND_CONNECTIONS = [
   [13, 17], [0, 17], [17, 18], [18, 19], [19, 20] // Pinky
 ];
 
+// Helper to resolve API Base URL (cloud deployment, local fullstack, or dev server)
+function getInitialApiBaseUrl() {
+  if (typeof window !== 'undefined' && window.location && window.location.origin) {
+    const { origin, hostname, port } = window.location;
+    // If running in production or remote host (e.g. *.onrender.com, custom domain)
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1' && origin.startsWith('http')) {
+      const saved = localStorage.getItem('isharalink_api_url');
+      if (saved && !saved.includes('localhost') && !saved.includes('127.0.0.1')) {
+        return saved;
+      }
+      return origin;
+    }
+    // If running locally from backend server (same port, e.g. :8000)
+    const isStandaloneDev = ['5500', '3000', '5173', '8080'].includes(port);
+    if (!isStandaloneDev && origin.startsWith('http')) {
+      return origin;
+    }
+  }
+  return localStorage.getItem('isharalink_api_url') || CONFIG.defaultApiBaseUrl;
+}
+
 // --- State Management ------------------------------------------------------
 const state = {
-  apiBaseUrl: localStorage.getItem('isharalink_api_url') || CONFIG.defaultApiBaseUrl,
+  apiBaseUrl: getInitialApiBaseUrl(),
   cameraActive: false,
   stream: null,
   holistic: null,
