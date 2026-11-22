@@ -1,0 +1,20 @@
+# Render Blueprint configuration for IsharaLink
+# Documentation: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: isharalink
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: TF_ENABLE_ONEDNN_OPTS
+        value: "0"
+      - key: TF_CPP_MIN_LOG_LEVEL
+        value: "2"
+      - key: ALLOWED_ORIGINS
+        value: "*"
