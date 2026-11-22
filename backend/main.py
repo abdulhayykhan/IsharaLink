@@ -183,3 +183,20 @@ async def predict_sign(payload: PredictRequest):
         top3=result["top3"],
         status=result["status"]
     )
+
+
+# Mount static assets (results charts, golden test cases, and frontend application)
+from fastapi.staticfiles import StaticFiles
+
+results_dir = ROOT_DIR / "results"
+if results_dir.exists():
+    app.mount("/results", StaticFiles(directory=str(results_dir)), name="results")
+
+tests_dir = ROOT_DIR / "tests"
+if tests_dir.exists():
+    app.mount("/tests", StaticFiles(directory=str(tests_dir)), name="tests")
+
+frontend_dir = ROOT_DIR / "frontend"
+if frontend_dir.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
+
