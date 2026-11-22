@@ -108,6 +108,8 @@
 html {
   scroll-behavior: smooth;
   font-size: 16px;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -119,6 +121,8 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -1239,7 +1243,9 @@ input[type="text"]:focus, select:focus {
 
 .section-container {
   max-width: 1400px;
+  width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .section-header {
@@ -1314,6 +1320,39 @@ input[type="text"]:focus, select:focus {
   font-weight: 600;
 }
 
+/* Model Comparison Info Cells */
+.model-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: flex-start;
+}
+
+.model-name {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
+.model-arch {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.badge-prod {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: var(--gold);
+  color: #ffffff;
+  padding: 0.12rem 0.45rem;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-top: 0.15rem;
+  box-shadow: 0 1px 4px rgba(187, 141, 63, 0.35);
+}
+
 .table-caption {
   margin-top: 0.85rem;
   font-size: 0.78rem;
@@ -1327,12 +1366,90 @@ input[type="text"]:focus, select:focus {
   gap: 1.1rem;
 }
 
-.eval-list li {
-  background: rgba(255, 255, 255, 0.65);
+.eval-card-item {
+  background: rgba(255, 255, 255, 0.75);
   border: 1px solid rgba(69, 73, 45, 0.12);
-  padding: 0.95rem 1.1rem;
+  padding: 0.95rem 1.15rem;
   border-radius: var(--radius-md);
   box-shadow: 0 2px 8px rgba(69, 73, 45, 0.03);
+  transition: var(--transition-smooth);
+}
+
+.eval-card-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(129, 136, 101, 0.3);
+}
+
+.eval-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.45rem;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.eval-badge {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+}
+
+.eval-score-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(129, 136, 101, 0.18);
+  color: var(--moss-green-dark);
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(129, 136, 101, 0.25);
+}
+
+.eval-card-metric {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--moss-green-dark);
+  margin: 0.25rem 0;
+}
+
+.eval-card-desc {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-top: 0.25rem;
+}
+
+.eval-hardware-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.55rem;
+  margin: 0.6rem 0;
+}
+
+.hw-stat {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(69, 73, 45, 0.12);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  box-shadow: 0 1px 3px rgba(69, 73, 45, 0.04);
+}
+
+.hw-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hw-val {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--moss-green-dark);
 }
 
 .eval-score {
@@ -1447,9 +1564,13 @@ input[type="text"]:focus, select:focus {
   to { opacity: 1; }
 }
 
-/* Helper class to hide keyboard shortcuts or non-essential words on mobile */
+/* Helper classes for responsive text switching */
 .desktop-only {
   display: inline;
+}
+
+.mobile-only {
+  display: none !important;
 }
 
 /* ==========================================================================
@@ -1470,7 +1591,7 @@ input[type="text"]:focus, select:focus {
     gap: 1.5rem;
   }
   .metrics-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1.5rem;
   }
 }
@@ -1581,19 +1702,25 @@ input[type="text"]:focus, select:focus {
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    flex-wrap: wrap;
+    gap: 0.35rem;
+    flex-wrap: nowrap;
   }
 
   .status-pill {
-    flex: 1 1 calc(50% - 1.5rem);
+    flex: 1 1 0;
     min-width: 0;
-    font-size: 0.72rem;
-    padding: 0.35rem 0.55rem;
+    font-size: 0.68rem;
+    padding: 0.35rem 0.45rem;
     justify-content: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .status-pill span:not(.status-dot) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .status-pill .status-dot {
@@ -1601,8 +1728,8 @@ input[type="text"]:focus, select:focus {
   }
 
   #btn-toggle-settings {
-    flex-shrink: 0;
-    padding: 0.35rem 0.6rem;
+    flex: 0 0 auto;
+    padding: 0.35rem 0.55rem;
   }
 
   /* Main container & cards */
@@ -1802,10 +1929,22 @@ input[type="text"]:focus, select:focus {
     line-height: 1.25;
   }
 
-  /* Research & Transparency Section */
+  /* Research & Transparency Section Overhaul */
   .research-section {
-    padding: 2rem 0.65rem;
+    width: 100%;
+    max-width: 100vw;
+    padding: 2rem 0;
     margin-top: 1.5rem;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  .section-container {
+    width: calc(100% - 1rem);
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0;
+    box-sizing: border-box;
   }
 
   .section-title {
@@ -1815,72 +1954,150 @@ input[type="text"]:focus, select:focus {
 
   .section-subtitle {
     font-size: 0.8rem;
+    padding: 0 0.5rem;
+  }
+
+  .metrics-grid {
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    gap: 1.15rem;
+    margin-bottom: 1.15rem;
+  }
+
+  .metric-table-card, .eval-summary-card, .gallery-card {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 1rem;
   }
 
   .table-responsive {
-    margin: 0 -0.5rem;
-    padding: 0 0.5rem 0.5rem 0.5rem;
-    width: calc(100% + 1rem);
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
   }
 
   .data-table {
-    min-width: 480px;
-    font-size: 0.78rem;
+    width: 100%;
+    min-width: 0; /* Prevents container blowout */
+    font-size: 0.74rem;
+    table-layout: auto;
   }
 
   .data-table th, .data-table td {
-    padding: 0.55rem 0.65rem;
+    padding: 0.45rem 0.25rem;
+    text-align: center;
+  }
+
+  .data-table th:first-child, .data-table td:first-child {
+    text-align: left;
+    padding-left: 0.35rem;
+  }
+
+  .data-table th:last-child, .data-table td:last-child {
+    padding-right: 0.35rem;
   }
 
   .data-table th {
     white-space: nowrap;
-    font-size: 0.68rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.02em;
+    padding: 0.4rem 0.25rem;
+  }
+
+  .model-name {
+    font-size: 0.76rem;
+  }
+
+  .model-arch {
+    font-size: 0.64rem;
+  }
+
+  .badge-prod {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.35rem;
   }
 
   .table-caption {
-    font-size: 0.74rem;
-    line-height: 1.45;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    margin-top: 0.75rem;
   }
 
+  /* Generalization & Split Evaluation Cards */
   .eval-list {
-    gap: 0.85rem;
+    gap: 0.75rem;
   }
 
-  .eval-list li {
+  .eval-card-item {
     padding: 0.75rem 0.85rem;
   }
 
-  .eval-score {
-    font-size: 0.84rem;
-    word-break: break-word;
+  .eval-badge {
+    font-size: 0.72rem;
   }
 
-  .eval-list p {
-    font-size: 0.74rem;
+  .eval-score-pill {
+    font-size: 0.68rem;
+    padding: 0.15rem 0.45rem;
   }
 
-  /* Gallery / Confusion Matrix Tabs */
+  .eval-card-metric {
+    font-size: 0.78rem;
+  }
+
+  .eval-card-desc {
+    font-size: 0.72rem;
+    line-height: 1.4;
+  }
+
+  .eval-hardware-stats {
+    gap: 0.35rem;
+  }
+
+  .hw-stat {
+    padding: 0.35rem 0.25rem;
+  }
+
+  .hw-label {
+    font-size: 0.62rem;
+  }
+
+  .hw-val {
+    font-size: 0.8rem;
+  }
+
+  /* Gallery / Confusion Matrix Tabs: 3 Equal Touch Pills */
   .gallery-tabs {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     width: 100%;
-    gap: 0.4rem;
+    gap: 0.35rem;
   }
 
   .tab-btn {
     width: 100%;
     text-align: center;
-    padding: 0.55rem 0.75rem;
-    font-size: 0.78rem;
+    padding: 0.45rem 0.2rem;
+    font-size: 0.72rem;
+    justify-content: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .gallery-viewer {
-    padding: 0.75rem;
-    margin-top: 0.85rem;
+    padding: 0.65rem;
+    margin-top: 0.75rem;
   }
 
   .img-fluid {
-    max-height: 280px;
+    max-height: 260px;
   }
 
   /* Footer */
