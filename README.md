@@ -58,8 +58,14 @@ conda env create -f environment.yml
 conda activate isharalink
 ```
 
-#### Option B: Pip / Virtualenv
+#### Option B: Pip / Virtualenv (or uv)
 ```bash
+# Using uv (fastest):
+uv venv .venv --python 3.11
+.venv\Scripts\activate
+uv pip install -r requirements.txt pytest httpx
+
+# Or standard venv:
 python -m venv .venv
 # On Windows:
 .venv\Scripts\activate
@@ -72,6 +78,27 @@ pip install -r requirements.txt
 Verify the environment:
 ```bash
 python -c "import tensorflow, mediapipe, fastapi, sklearn; print('Setup successful!')"
+```
+
+---
+
+## ⚡ Running the Backend API & Tests
+
+### Start the FastAPI Server
+```bash
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+```
+Interactive Swagger API docs available at: `http://localhost:8000/docs`
+
+### Run Test Suite (Golden Tests & Preprocessing Verification)
+```bash
+pytest -v tests/
+```
+
+### Run with Docker
+```bash
+docker build -t isharalink-backend .
+docker run -p 8000:8000 isharalink-backend
 ```
 
 ---
