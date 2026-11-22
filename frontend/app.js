@@ -275,7 +275,7 @@ async function initMediaPipeHolistic() {
     });
 
     state.holistic.setOptions({
-      modelComplexity: 1,
+      modelComplexity: 0, // Lite model for faster real-time CPU performance
       smoothLandmarks: true,
       minDetectionConfidence: CONFIG.detectionConfidence,
       minTrackingConfidence: CONFIG.trackingConfidence,
@@ -329,22 +329,12 @@ async function startCamera() {
     DOM.canvas.width = DOM.video.videoWidth || 640;
     DOM.canvas.height = DOM.video.videoHeight || 480;
 
-    // Use MediaPipe Camera helper for continuous detection loop
-    if (typeof Camera !== 'undefined') {
-      state.cameraUtil = new Camera(DOM.video, {
-        onFrame: async () => {
-          if (state.cameraActive && state.holistic) {
-            await state.holistic.send({ image: DOM.video });
-            updateFps();
-          }
-        },
-        width: 640,
-        height: 480,
-      });
-      state.cameraUtil.start();
+    // Start continuous native detection loop (avoids double getUserMedia collision)
+    isProcessingFrame = false;
+    if ('requestVideoFrameCallback' in DOM.video) {
+      DOM.video.requestVideoFrameCallback(processVideoFrame);
     } else {
-      // Fallback requestAnimationFrame loop
-      requestAnimationFrame(runFrameLoop);
+      animFrameId = requestAnimationFrame(processVideoFrame);
     }
 
     console.log('📷 Camera started:', DOM.canvas.width, 'x', DOM.canvas.height);
@@ -357,21 +347,42 @@ async function startCamera() {
   }
 }
 
-async function runFrameLoop() {
+// Processing lock and animation frame handles
+let isProcessingFrame = false;
+let animFrameId = null;
+
+async function processVideoFrame() {
   if (!state.cameraActive) return;
-  if (state.holistic && DOM.video.readyState >= 2) {
-    await state.holistic.send({ image: DOM.video });
-    updateFps();
+
+  if (DOM.video && DOM.video.readyState >= 2 && state.holistic && !isProcessingFrame) {
+    isProcessingFrame = true;
+    try {
+      await state.holistic.send({ image: DOM.video });
+      updateFps();
+    } catch (err) {
+      console.warn('Holistic frame processing warning:', err);
+    } finally {
+      isProcessingFrame = false;
+    }
   }
-  requestAnimationFrame(runFrameLoop);
+
+  if (state.cameraActive) {
+    if ('requestVideoFrameCallback' in DOM.video) {
+      DOM.video.requestVideoFrameCallback(processVideoFrame);
+    } else {
+      animFrameId = requestAnimationFrame(processVideoFrame);
+    }
+  }
 }
 
 function stopCamera() {
   if (!state.cameraActive) return;
 
-  if (state.cameraUtil) {
-    state.cameraUtil.stop();
-    state.cameraUtil = null;
+  state.cameraActive = false;
+  isProcessingFrame = false;
+  if (animFrameId) {
+    cancelAnimationFrame(animFrameId);
+    animFrameId = null;
   }
 
   if (state.stream) {
@@ -379,7 +390,6 @@ function stopCamera() {
     state.stream = null;
   }
 
-  state.cameraActive = false;
   DOM.video.srcObject = null;
   DOM.cameraPlaceholder.classList.remove('hidden');
   DOM.btnRecordSign.disabled = true;
