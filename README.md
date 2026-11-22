@@ -30,10 +30,10 @@
 
 | Contributor | Role & Branch | Primary Responsibilities |
 | :--- | :--- | :--- |
-| **Abdul Hayy Khan**<br>([@abdulhayykhan](https://github.com/abdulhayykhan)) | **Backend Lead & Integrator**<br>`backend` / `main` | FastAPI REST service, Pydantic data contract validation, latency logging, static asset mounting, Docker & Render deployment pipeline, test suite integration. |
+| **Zainab Siddiq**<br>([@Zainab-Siddiq](https://github.com/Zainab-Siddiq)) | **Data Lead**<br>`data` | Dataset audit and sanitization ($6,424$ clips across $62$ classes), temporal linear interpolation ($60$ frames), wrist-relative origin normalization, stratified splits. |
 | **Bushra Zafar**<br>([@bushra3005](https://github.com/bushra3005)) | **Model Lead**<br>`model` | Deep learning architectures (Perceptron, MLP, GRU, LSTM), hyperparameter ablation, threshold calibration ($0.30$), Leave-One-Camera-Out (LOCO) evaluation, model export. |
 | **Muhammad Fasih**<br>([@fasihbrohi7-ops](https://github.com/fasihbrohi7-ops)) | **Frontend Lead**<br>`frontend` | MediaPipe Holistic landmark extraction, 3-2-1 countdown & 2s capture pipeline, realistic frosted glassmorphism UI, Urdu TTS, golden test runner, sentence construction tray. |
-| **Zainab Siddiq**<br>([@Zainab-Siddiq](https://github.com/Zainab-Siddiq)) | **Data Lead**<br>`data` | Dataset audit and sanitization ($6,424$ clips across $62$ classes), temporal linear interpolation ($60$ frames), wrist-relative origin normalization, stratified splits. |
+| **Abdul Hayy Khan**<br>([@abdulhayykhan](https://github.com/abdulhayykhan)) | **Backend Lead & Integrator**<br>`backend` / `main` | FastAPI REST service, Pydantic data contract validation, latency logging, static asset mounting, Docker & Render deployment pipeline, test suite integration. |
 
 ---
 
