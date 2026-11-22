@@ -410,13 +410,14 @@ function onHolisticResults(results) {
   // Update hands detection badge
   updateHandsBadge(leftHand, rightHand);
 
-  // Draw hand landmarks and skeletal connections with vivid styling
+  // Draw hand landmarks and skeletal connections with palette styling
   if (leftHand) {
-    drawHandSkeleton(ctx, leftHand, width, height, '#00f2fe', '#38bdf8');
+    drawHandSkeleton(ctx, leftHand, width, height, '#818865', '#BB8D3F');
   }
   if (rightHand) {
-    drawHandSkeleton(ctx, rightHand, width, height, '#ff007f', '#f43f5e');
+    drawHandSkeleton(ctx, rightHand, width, height, '#575B42', '#BB8D3F');
   }
+
 
   ctx.restore();
 
@@ -1092,6 +1093,17 @@ function setupEventListeners() {
       }
     });
   });
+
+  DOM.activeGalleryImg.addEventListener('error', () => {
+    const current = DOM.activeGalleryImg.getAttribute('src') || '';
+    if (current.startsWith('../')) {
+      DOM.activeGalleryImg.src = current.replace(/^\.\.\//, '');
+    } else if (!current.startsWith('http') && !current.startsWith('/')) {
+      DOM.activeGalleryImg.src = '../' + current;
+    }
+  });
+
+
 
   // Periodic health check every 15s
   setInterval(checkBackendHealth, 15000);
