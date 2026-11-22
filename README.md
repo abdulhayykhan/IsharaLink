@@ -414,5 +414,5 @@ The live application is hosted on [Render](https://render.com) as a Dockerized W
 ---
 
 <div align="center">
-  <sub>Developed with ❤️ by the BS AI Team at Dawood University of Engineering & Technology, Karachi.</sub>
+  <sub>Developed with ❤️ by the IsharaLink Team (24F-AI-006, 009, 016, 051) • DUET Karachi.</sub>
 </div>
