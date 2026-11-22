@@ -1,0 +1,2 @@
+model,val_acc,test_acc,test_top3,epochs_run,params
+1D-CNN,0.9843096234309623,0.9738493723849372,0.9947698744769874,15,56766

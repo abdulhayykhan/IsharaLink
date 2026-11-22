@@ -1,0 +1,4 @@
+(a) Optimizer: best on validation = rmsprop (val_acc=0.977, test_acc=0.967).
+(b) Dropout / L2: best on validation = dropout=0.0, L2=off (val_acc=0.984, test_acc=0.983).
+(c) Dense-head activation: best on validation = relu (val_acc=0.983, test_acc=0.971).
+(d) Sequence length: best on validation = T=30 (val_acc=0.982, test_acc=0.978).

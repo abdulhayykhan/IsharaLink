@@ -1,0 +1,11 @@
+{
+  "threshold": 0.3,
+  "n_classes": 62,
+  "seq_len": 60,
+  "n_features": 126,
+  "model_type": "gru",
+  "model_file": "models/ishara_model.keras",
+  "classes_file": "data/processed/classes.json",
+  "threshold_val_accept_rate": 0.9989539748953975,
+  "threshold_val_accuracy_on_accepted": 0.9821989528795811
+}

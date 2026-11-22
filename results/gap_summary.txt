@@ -1,0 +1,1 @@
+Accuracy falls as the test data gets less similar to the training data: random split 98.0%, leave-one-camera-out 76.9%.
