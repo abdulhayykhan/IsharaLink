@@ -130,3 +130,20 @@ def test_unknown_threshold_behavior(client):
     res = resp.json()
     assert res["status"] in ("ok", "unknown")
     print(f"\n[No-hands test]: status='{res['status']}', confidence={res['confidence']}")
+
+
+def test_browser_exported_sample(client):
+    """Test inference on sample exported directly from Fasih's frontend UI."""
+    sample_path = ROOT_DIR / "tests" / "browser_exported_sample.json"
+    assert sample_path.exists(), "browser_exported_sample.json not found"
+    with open(sample_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    resp = client.post("/predict", json={"frames": data["frames"], "client": data.get("client", "web")})
+    assert resp.status_code == 200
+    res = resp.json()
+    assert "label" in res
+    assert "confidence" in res
+    assert res["status"] == "ok"
+    assert res["label"] == "aircrash"
+    print(f"\n[Browser Export PASS]: predicted '{res['label']}' ({res['confidence']*100:.1f}%)")
+

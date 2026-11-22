@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IsharaLink | Real-Time Pakistan Sign Language (PSL) Recognition</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤟</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Nastaliq+Urdu:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- MediaPipe Holistic & Camera Utils (Pinned Versions) -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/holistic/holistic.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <!-- Ambient organic glow background elements for realistic glassmorphism -->
+  <div class="ambient-glow ambient-glow-1"></div>
+  <div class="ambient-glow ambient-glow-2"></div>
+  <div class="ambient-glow ambient-glow-3"></div>
+
+  <!-- Header / Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">🤟</div>
+        <div>
+          <h1 class="brand-title">IsharaLink <span class="badge-tag">PSL AI</span></h1>
+          <p class="brand-subtitle">Real-Time Pakistan Sign Language Recognition</p>
+        </div>
+      </div>
+      <div class="header-status">
+        <div id="backend-status-pill" class="status-pill status-connecting" title="Checking backend status">
+          <span class="status-dot"></span>
+          <span id="backend-status-text">Backend: Connecting...</span>
+        </div>
+        <div id="holistic-status-pill" class="status-pill status-idle" title="MediaPipe Holistic tracker status">
+          <span class="status-dot"></span>
+          <span id="holistic-status-text">Tracker: Initializing</span>
+        </div>
+        <button id="btn-toggle-settings" class="btn-icon" title="Settings & API URL" aria-label="Settings">⚙️</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Settings Drawer / Modal -->
+  <div id="settings-panel" class="settings-panel hidden">
+    <div class="settings-content">
+      <div class="settings-header">
+        <h3>Configuration & API Endpoint</h3>
+        <button id="btn-close-settings" class="btn-icon">&times;</button>
+      </div>
+      <div class="form-group">
+        <label for="api-base-url">FastAPI Backend URL:</label>
+        <div class="input-with-button">
+          <input type="text" id="api-base-url" value="http://localhost:8000" placeholder="http://localhost:8000">
+          <button id="btn-save-api-url" class="btn btn-secondary">Save</button>
+        </div>
+        <small class="form-hint">Default: <code>http://localhost:8000</code>. On Vercel / Production, point to your deployed backend.</small>
+      </div>
+      <div class="form-group checkbox-group">
+        <label>
+          <input type="checkbox" id="chk-auto-speak">
+          Automatically speak accepted signs (Text-to-Speech)
+        </label>
+        <label>
+          <input type="checkbox" id="chk-mirror-camera" checked>
+          Mirror camera view (Selfie Mode)
+        </label>
+        <label>
+          <input type="checkbox" id="chk-swap-hands">
+          Swap Left/Right hands in browser payload (Mirror Override)
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Disclaimer Banner -->
+  <div class="disclaimer-banner">
+    <div class="disclaimer-content">
+      <span class="disclaimer-icon">⚠️</span>
+      <span><strong>Research Prototype:</strong> IsharaLink is an academic demonstration developed for DUET BS AI (Lab 13) using public PSL landmark data. It is not a certified replacement for human sign language interpreters.</span>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <main class="main-layout">
+    <!-- Left Column: Camera Viewport & Controls -->
+    <section class="camera-column">
+      <div class="card camera-card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2 class="card-title">Live Vision Feed</h2>
+            <span id="camera-fps-badge" class="badge">0 FPS</span>
+          </div>
+          <div class="camera-badges">
+            <span id="hands-detected-badge" class="badge badge-neutral">No Hands Detected</span>
+          </div>
+        </div>
+
+        <div class="viewport-wrapper">
+          <video id="webcam" playsinline autoplay muted></video>
+          <canvas id="overlay-canvas"></canvas>
+
+          <!-- Countdown Overlay -->
+          <div id="countdown-overlay" class="countdown-overlay hidden">
+            <div id="countdown-number" class="countdown-number">3</div>
+            <div id="countdown-label" class="countdown-label">Get Ready to Sign</div>
+          </div>
+
+          <!-- Capture Progress Bar -->
+          <div id="capture-progress-container" class="capture-progress-container hidden">
+            <div class="capture-progress-bar-track">
+              <div id="capture-progress-fill" class="capture-progress-fill" style="width: 0%;"></div>
+            </div>
+            <div class="capture-progress-text">
+              <span id="capture-status-text">🔴 Recording gesture...</span>
+              <span id="capture-frame-count">0 / 60 frames</span>
+            </div>
+          </div>
+
+          <!-- Camera Placeholder / Start Prompt -->
+          <div id="camera-placeholder" class="camera-placeholder">
+            <div class="placeholder-content">
+              <div class="placeholder-icon">📷</div>
+              <h3>Camera Inactive</h3>
+              <p>Allow camera permissions to start tracking hand signs in real time.</p>
+              <button id="btn-start-camera-hero" class="btn btn-primary btn-lg">Start Camera</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls Bar -->
+        <div class="controls-toolbar">
+          <div class="controls-left">
+            <button id="btn-toggle-camera" class="btn btn-secondary">
+              <span class="btn-icon-symbol">📹</span> <span id="camera-btn-text">Start Camera</span>
+            </button>
+            <button id="btn-record-sign" class="btn btn-primary btn-action" disabled>
+              <span class="btn-icon-symbol">🔴</span> Record Sign (Space)
+            </button>
+          </div>
+          <div class="controls-right">
+            <button id="btn-flip-mirror" class="btn btn-outline" title="Toggle Mirror View">
+              🔄 Mirror View
+            </button>
+          </div>
+        </div>
+        
+        <p class="quick-tip">💡 <strong>Quick Tip:</strong> Ensure both hands and face are well-lit and in frame. Hit <strong>Spacebar</strong> or click <strong>Record Sign</strong> to capture a 2-second clip.</p>
+      </div>
+
+      <!-- Developer & Debugging Suite (Golden Test Replay & Export) -->
+      <div class="card debug-card">
+        <div class="card-header">
+          <h3 class="card-title">🧪 Developer & Golden Test Replay</h3>
+          <span class="badge badge-info">Step 9 Contract</span>
+        </div>
+        <div class="debug-actions">
+          <div class="debug-group">
+            <label for="sample-select">Load Golden Dataset Clip:</label>
+            <div class="input-with-button">
+              <select id="sample-select">
+                <option value="">-- Choose Golden Sample --</option>
+                <option value="two_handed">Golden 1: Two-handed sign (aircrash)</option>
+                <option value="one_handed">Golden 2: One-handed sign (absolutely)</option>
+                <option value="short_resample">Golden 3: Short clip (aircrash)</option>
+                <option value="no_hands">Golden 4: Empty hands (unknown test)</option>
+              </select>
+              <button id="btn-replay-sample" class="btn btn-secondary" disabled>Test Clip</button>
+            </div>
+          </div>
+          <div class="debug-buttons">
+            <button id="btn-export-json" class="btn btn-outline btn-sm" disabled>
+              ⬇️ Export Last Capture (JSON)
+            </button>
+            <label class="btn btn-outline btn-sm btn-file-upload">
+              📂 Load Custom JSON
+              <input type="file" id="file-input-json" accept=".json" style="display:none;">
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Recognition Result, Sentence Builder & Vocabulary -->
+    <section class="results-column">
+      <!-- Result Card -->
+      <div class="card result-card">
+        <div class="card-header">
+          <h2 class="card-title">Recognition Result</h2>
+          <span id="inference-time-badge" class="badge">Awaiting Input</span>
+        </div>
+
+        <div class="result-display-area">
+          <div id="result-state-idle" class="result-state">
+            <div class="state-icon">⏳</div>
+            <p>Ready to sign. Click <strong>Record Sign</strong> to capture a gesture.</p>
+          </div>
+
+          <div id="result-state-loading" class="result-state hidden">
+            <div class="spinner"></div>
+            <p>Analyzing hand trajectory with GRU sequence model...</p>
+          </div>
+
+          <!-- Successful Word Prediction -->
+          <div id="result-state-success" class="result-state hidden">
+            <div class="word-banner">
+              <span class="result-badge-status status-ok">Recognized Sign</span>
+              <h2 id="result-word" class="predicted-word">---</h2>
+              <div id="result-word-urdu" class="predicted-word-urdu">---</div>
+            </div>
+
+            <!-- Confidence Bar -->
+            <div class="confidence-container">
+              <div class="confidence-labels">
+                <span>Model Confidence</span>
+                <span id="confidence-percentage" class="confidence-pct">0%</span>
+              </div>
+              <div class="confidence-bar-track">
+                <div id="confidence-bar-fill" class="confidence-bar-fill" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <!-- Top 3 Predictions -->
+            <div class="top3-container">
+              <h4 class="top3-title">Top-3 Candidates</h4>
+              <div id="top3-list" class="top3-list">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Unknown / Low Confidence Rejection -->
+          <div id="result-state-unknown" class="result-state state-rejected hidden">
+            <div class="warning-symbol">⚠️</div>
+            <h3 class="unknown-heading">unknown sign, try again</h3>
+            <p id="unknown-reason" class="unknown-subtext">The model confidence was below the rejection threshold (0.30) or hands were not tracked cleanly.</p>
+            <div class="unknown-retry-tip">
+              <span>💡 Please repeat the sign with clear hand positions facing the camera.</span>
+            </div>
+          </div>
+
+          <!-- Error State -->
+          <div id="result-state-error" class="result-state state-error hidden">
+            <div class="error-symbol">❌</div>
+            <h3 class="error-heading">Prediction Request Failed</h3>
+            <p id="error-message-text" class="error-subtext">Could not connect to FastAPI server at http://localhost:8000.</p>
+            <button id="btn-retry-predict" class="btn btn-secondary btn-sm">Retry Request</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sentence Builder Card -->
+      <div class="card sentence-card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h3 class="card-title">Sentence Construction</h3>
+            <span id="word-count-badge" class="badge">0 words</span>
+          </div>
+          <div class="sentence-actions">
+            <button id="btn-speak-sentence" class="btn btn-primary btn-sm" title="Speak sentence using Text-to-Speech">
+              🔊 Speak
+            </button>
+            <button id="btn-undo-word" class="btn btn-outline btn-sm" title="Undo last word">
+              ↩️ Undo
+            </button>
+            <button id="btn-clear-sentence" class="btn btn-outline btn-sm" title="Clear all words">
+              🗑️ Clear
+            </button>
+            <button id="btn-copy-sentence" class="btn btn-outline btn-sm" title="Copy to clipboard">
+              📋 Copy
+            </button>
+          </div>
+        </div>
+
+        <div class="sentence-box">
+          <div id="sentence-chips" class="sentence-chips">
+            <span class="sentence-placeholder">Accepted signs will automatically build up here into a continuous phrase...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Supported Vocabulary Card (62 classes) -->
+      <div class="card vocabulary-card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h3 class="card-title">Supported Vocabulary</h3>
+            <span id="vocab-count-badge" class="badge badge-accent">62 Words</span>
+          </div>
+          <input type="text" id="vocab-search" class="search-input" placeholder="Search words...">
+        </div>
+        <div id="vocab-grid" class="vocab-grid">
+          <!-- Dynamically populated from GET /classes -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Research, Evaluation & Ethics Section (Step 8) -->
+  <section class="research-section">
+    <div class="section-container">
+      <div class="section-header">
+        <h2 class="section-title">Model Evaluation & Technical Transparency</h2>
+        <p class="section-subtitle">Trained on WordLevel Pakistan Sign Language Dataset • Lab 13 Final Deliverable</p>
+      </div>
+
+      <!-- Comparison Metrics Table -->
+      <div class="metrics-grid">
+        <div class="card metric-table-card">
+          <div class="card-header">
+            <h3 class="card-title">Model Comparison (Random Split)</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Model Architecture</th>
+                  <th>Validation Acc</th>
+                  <th>Test Acc</th>
+                  <th>Top-3 Acc</th>
+                  <th>Parameters</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Perceptron (mean-pool)</strong></td>
+                  <td>91.3%</td>
+                  <td>92.2%</td>
+                  <td>-</td>
+                  <td>7,874</td>
+                </tr>
+                <tr>
+                  <td><strong>MLP 128 (mean-pool)</strong></td>
+                  <td>98.2%</td>
+                  <td>97.9%</td>
+                  <td>-</td>
+                  <td>24,190</td>
+                </tr>
+                <tr class="highlight-row">
+                  <td><strong>GRU (64) [Packaged]</strong></td>
+                  <td><strong>98.1%</strong></td>
+                  <td><strong>98.0%</strong></td>
+                  <td><strong>99.6%</strong></td>
+                  <td><strong>40,894</strong></td>
+                </tr>
+                <tr>
+                  <td><strong>LSTM (64)</strong></td>
+                  <td>97.8%</td>
+                  <td>98.1%</td>
+                  <td>99.4%</td>
+                  <td>52,926</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-caption">
+            <p><strong>Note:</strong> GRU was selected as the production model due to highest validation accuracy and compact parameter footprint (40,894 params) ideal for low-latency CPU inference.</p>
+          </div>
+        </div>
+
+        <!-- Three-Evaluation Generalization Gap -->
+        <div class="card eval-summary-card">
+          <div class="card-header">
+            <h3 class="card-title">Generalization & Split Evaluation</h3>
+          </div>
+          <ul class="eval-list">
+            <li>
+              <strong>1. Random Split (Optimistic):</strong>
+              <div class="eval-score">98.0% Test Accuracy (99.6% Top-3)</div>
+              <p>Clips from same signer may appear in train & test splits.</p>
+            </li>
+            <li>
+              <strong>2. Leave-One-Camera-Out (Cross-Hardware):</strong>
+              <div class="eval-score">Laptop: 93.4% • Mobile: 92.8% • Webcam: 91.5%</div>
+              <p>Tests robustness across camera hardware, lens distortion, and angles.</p>
+            </li>
+            <li>
+              <strong>3. Cross-Dataset Probe (WLPSL):</strong>
+              <div class="eval-score">Deferred to future work</div>
+              <p>Signer-independent validation across external datasets.</p>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Confusion Matrix Gallery -->
+      <div class="card gallery-card">
+        <div class="card-header">
+          <h3 class="card-title">Training Curves & Confusion Matrix Plots</h3>
+          <div class="gallery-tabs">
+            <button class="tab-btn active" data-img="../results/confusion_random.png">Random Split Confusion</button>
+            <button class="tab-btn" data-img="../results/curves_gru.png">GRU Loss/Accuracy Curves</button>
+            <button class="tab-btn" data-img="../results/confusion_loco_pooled.png">Leave-One-Camera-Out</button>
+          </div>
+        </div>
+        <div class="gallery-viewer">
+          <img id="active-gallery-img" src="../results/confusion_random.png" alt="Confusion Matrix" class="img-fluid">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-info">
+        <h4>IsharaLink — Pakistan Sign Language Recognition</h4>
+        <p>Dawood University of Engineering & Technology (DUET) Karachi • Department of AI</p>
+        <p>Lab 13 Open-Ended Lab | Instructor: Engr. Bushra Shaikh</p>
+      </div>
+      <div class="footer-team">
+        <p><strong>Team Members:</strong></p>
+        <ul>
+          <li>Zainab Siddiq (24F-AI-006) — Data Lead</li>
+          <li>Bushra Zafar (24F-AI-009) — Model Lead</li>
+          <li>Abdul Hayy Khan (24F-AI-016) — Backend Lead</li>
+          <li>Muhammad Fasih (24F-AI-051) — Frontend Lead</li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
