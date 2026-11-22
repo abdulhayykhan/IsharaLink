@@ -48,6 +48,13 @@ models/*.keras
 *.swo
 .DS_Store
 Thumbs.db
+
+# Video recordings & screencasts
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
 ehthumbs.db
 
 # Logs
